@@ -1,70 +1,67 @@
-# dsh-tui · Project SEKAI theme pack
+# dsh-tui · Project SEKAI 主题包
 
-Two things for [dsh-tui](https://www.npmjs.com/package/@deepseek-harness-tui/dsh-tui),
-built around 暁山瑞希 (Akiyama Mizuki) and 東雲絵名 (Shinonome Ena) from
-*Project SEKAI COLORFUL STAGE!*:
+为 [dsh-tui](https://www.npmjs.com/package/@deepseek-harness-tui/dsh-tui) 做的两样东西，
+围绕《世界计划 彩色舞台 feat. 初音未来》里的 **暁山瑞希**（Akiyama Mizuki）和
+**東雲絵名**（Shinonome Ena）：
 
-1. **Two custom themes** — 81 colour keys each, single-hue ramps, official image
-   colours as the accent (`#DDAACC` for Mizuki, `#CCAA88` for Ena).
-2. **Pixel mascots** — 32×32 official chibi cursors turned into splash / portrait
-   art, plus a settings row that lets you pick which character shows up.
+1. **两套主题** —— 各覆盖全部 81 个颜色键，用官方 image color 当 accent
+   （瑞希 `#DDAACC`、絵名 `#CCAA88`），开屏大字走单色相色阶，不会串色。
+2. **像素小人** —— 把官方 32×32 Q 版光标做成开屏 / 侧栏立绘，并给设置页加了一行
+   「立绘形象」来选择显示哪个角色。
 
 | mizuki | ena |
 | :--: | :--: |
-| ![mizuki theme](docs/images/mizuki.png) | ![ena theme](docs/images/ena.png) |
+| ![mizuki 主题](docs/images/mizuki.png) | ![ena 主题](docs/images/ena.png) |
 
 ```
-themes/mizuki.json      81 keys, base dark, accent #DDAACC
-themes/ena.json         81 keys, base dark, accent #CCAA88
-scripts/                everything that puts them on screen
-docs/PIPELINE.md        how the mascot art is produced, step by step
-docs/NOTES.md           dead ends worth not repeating
+themes/mizuki.json      81 色键，base dark，accent #DDAACC
+themes/ena.json         81 色键，base dark，accent #CCAA88
+scripts/                把上面这些真正装上去的脚本
+docs/PIPELINE.md        像素小人从哪来、怎么处理
+docs/NOTES.md           走过的弯路（别再踩一遍）
 ```
 
-## Quick start
+## 三分钟上手
 
 ```bash
-# 1. themes
-node scripts/install-themes.mjs mizuki     # or: ena
+# 1. 主题
+node scripts/install-themes.mjs mizuki     # 或 ena；加参数会顺手设成当前主题
 
-# 2. splash / sidebar mascot (optional, needs Python + Pillow)
+# 2. 开屏 / 侧栏像素小人（可选，需要 Python + Pillow）
 python scripts/fetch-cursors.py Mizuki Ena
 python scripts/cursor_head.py cursors/frames/Mizuki/Person/00.png assets/maid-mizuki/normal.png
 python scripts/cursor_head.py cursors/frames/Ena/Person/00.png    assets/maid-ena/normal.png
-node scripts/install-mascot.mjs mizuki   --normal assets/maid-mizuki/normal.png   --happy  assets/maid-mizuki/happy.png
+node scripts/install-mascot.mjs mizuki   --normal assets/maid-mizuki/normal.png   --happy  assets/maid-mizuki/normal.png
 
-# 3. two small patches so hex themes and the character picker actually work
+# 3. 两个补丁：让 hex 主题生效、让设置页出现角色选择
 node scripts/patch-theme-colors.mjs
 node scripts/patch-portrait-options.mjs
 ```
 
-Restart dsh-tui afterwards (`terminalImages` and the patches are read at boot).
+之后重启 dsh-tui（`terminalImages` 和这些补丁都在启动时读）。
 
-## Why the patches exist
+## 为什么要打补丁
 
-`dsh-tui` ships themes whose colours are written `rgb(r,g,b)`. Custom themes tend
-to be written `#rrggbb`, and `parseRGB()` in
-`lib/types/components/Spinner/spinnerUtils.js` silently returns `null` for hex —
-so the splash wordmark fell back to the DeepSeek brand blue while every other
-surface picked up the accent. `patch-theme-colors.mjs` teaches `parseRGB` about
-hex and rebuilds the big title as a single-hue ramp off `theme.accent`
-(`#DDAACC → #E8C5DC → #F2DFEC`) instead of mixing in `activity`/`FLASH`/`PALE`.
+`dsh-tui` 自带主题的颜色都写成 `rgb(r,g,b)`，而自定义主题一般写 `#rrggbb`。
+`lib/types/components/Spinner/spinnerUtils.js` 里的 `parseRGB()` 只认前者，遇到 hex
+静默返回 `null` —— 结果就是**界面全都跟着主题变色，只有开屏那行大字还是品牌蓝**。
+`patch-theme-colors.mjs` 让 `parseRGB` 认识 hex，并把大字重建成基于 `theme.accent`
+的单色相色阶（`#DDAACC → #E8C5DC → #F2DFEC`），不再借 `activity` / `FLASH` / `PALE`。
 
-The settings panel builds its rows from an explicit field list in
-`lib/types/dsh-adapter/plugin.js`, with metadata from
-`lib/types/settings/definitions.js`. Neither knows about a "which portrait art"
-option, so `patch-portrait-options.mjs` adds one:
+设置页的行不是从配置文件读的，而是 `lib/types/dsh-adapter/plugin.js` 里一份显式字段
+数组拼出来的，元数据来自 `lib/types/settings/definitions.js`，两边都不认识「立绘形象」。
+`patch-portrait-options.mjs` 给它加一行：
 
 ```
 开屏与吉祥物 → 立绘形象:  内置女仆娘 / 暁山瑞希 / 東雲絵名
 ```
 
-Both scripts are idempotent and must be re-run after upgrading `dsh-tui`
-(they patch files inside `~/.dsh/profiles/dsh-tui/node_modules/...`).
+两个脚本都是幂等的，**升级 dsh-tui 之后要重跑一次**（它们改的是
+`~/.dsh/profiles/dsh-tui/node_modules/...` 里的文件）。
 
-## Splash art is a three-way choice
+## 开屏立绘是三选一
 
-From `lib/types/components/splashArtRows.js`:
+来自 `lib/types/components/splashArtRows.js`：
 
 ```js
 if (brand === 'deepseek' && (mascotSkin === 'deepy' || mascotSkin === 'whaleGirl')) return 'mascot';
@@ -72,26 +69,51 @@ if (input.whaleGirl || brand !== 'deepseek') return 'portrait';
 return 'whale';
 ```
 
-`mascot` wins whenever the pet skin is a sticker pet, so the portrait slot only
-shows up with `companion.skin: whale` + `whaleGirl: true`:
+只要吉祥物皮肤是表情包（deepy / whaleGirl），`mascot` 就抢占这一格，立绘轮不到。
+所以要让立绘显示，得这样配：
 
 ```yaml
 # ~/.dsh/profiles/dsh-tui/cordis.patch.yml
 terminalImages: true
 whaleGirl: true
-maidPortraitSkin: mizuki    # added by patch-portrait-options.mjs
+maidPortraitSkin: mizuki    # 由 patch-portrait-options.mjs 加出来
 companion:
   skin: whale
 ```
 
-`portrait` renders a real image through kitty/sixel, which needs a terminal that
-answers the graphics query. Windows Terminal works once
-`terminalImages` is on; in a terminal that cannot, dsh-tui falls back to the
-30×30 letter grid (`whaleGirlSprite.js`) — that path is why the same art looks
-blocky in some sessions.
+`portrait` 走 kitty/sixel 真图，需要终端能应答图形协议（Windows Terminal 打开
+`terminalImages` 就可用）。终端不支持时会退回 30×30 字符网格
+（`whaleGirlSprite.js`）——同一个角色在不同终端里"糊"和"清楚"的区别来自这里。
 
-## Credits / licence
+## 版权
 
-Code: MIT. Art derived from *Project SEKAI COLORFUL STAGE!* belongs to
-SEGA / Colorful Palette; this repo does not redistribute it — the scripts fetch
-or generate it locally. See [NOTICE.md](NOTICE.md).
+代码 MIT。角色像素图源自 *Project SEKAI COLORFUL STAGE!*（© SEGA / Colorful Palette），
+**本仓库不包含这些图片**，脚本只在你本机下载或生成。详见 [NOTICE.md](NOTICE.md)，仅供
+个人非商业使用。
+
+---
+
+## English
+
+A colour-theme pack for `dsh-tui` built around two *Project SEKAI* characters:
+two 81-key themes (`#DDAACC` / `#CCAA88` accents, single-hue title ramps), a
+pipeline that turns the official 32x32 chibi cursors into splash/portrait art,
+and two idempotent patches — `parseRGB()` learns hex (otherwise a hex theme
+silently falls back to the brand blue wordmark), and a 「立绘形象」 row is added
+to the settings panel so you can pick which character shows up.
+
+Quick start:
+
+```bash
+node scripts/install-themes.mjs mizuki
+python scripts/fetch-cursors.py Mizuki Ena
+python scripts/cursor_head.py cursors/frames/Mizuki/Person/00.png assets/maid-mizuki/normal.png
+node scripts/install-mascot.mjs mizuki --normal assets/maid-mizuki/normal.png
+node scripts/patch-theme-colors.mjs && node scripts/patch-portrait-options.mjs
+```
+
+Re-run both patch scripts after upgrading `dsh-tui`. Code is MIT; the artwork
+belongs to SEGA / Colorful Palette and is not redistributed here.
+
+> Docs in `docs/` are written in English (they quote code and error strings);
+> the README above is the Chinese overview.

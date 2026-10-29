@@ -1,5 +1,7 @@
 # Dead ends (so the next person skips them)
 
+> 中文摘要：任何「大图降采样到 42×30」都会糊（整幅只有 1260 格，脸要占 200 格）；手绘 42×30 形状干净但不像本人；`Normal` 光标里箭头压在左鬓上，按颜色、按其它状态搬像素、按 bbox 对齐投票三种补法都失败 —— 正确做法是换用 `Person` 状态。另外 `parseRGB()` 只认 `rgb()` 不认 `#hex`，是「主题整体生效但开屏大字还是品牌蓝」的根因。
+
 Getting a *recognisable* character out of a 32-pixel-wide budget took a lot of
 wrong turns. These are the ones that looked promising and were not.
 

@@ -1,5 +1,7 @@
 # Mascot pipeline
 
+> 中文摘要：先用 `fetch-cursors.py` 下载官方 32×32 动画光标并抽帧；用 `Person` 状态（图标在左上、不压脸），按连通块大小丢掉那枚图标，再补回被它盖住的 1–2 px 头发描边；最近邻放大到 301×288 后用 `install-mascot.mjs` 装进 `assets/maid-<角色>/`。立绘也可以从 `Charsel-*.png` 走 `animecut.py`（isnetis.onnx）+ `polish_bust.py`（alpha 二值化、去投影、缩放进画布）。
+
 Goal: a character-accurate face at 32×32 (splash grid) and at 301×288 (portrait
 slot), without redrawing anything by hand.
 
