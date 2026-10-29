@@ -1,0 +1,13 @@
+# generated / downloaded art (official assets are not redistributed)
+cursors/
+assets/
+models/
+*.orig
+out_*/
+*.small.png
+*.small.json
+
+# local scratch
+__pycache__/
+*.pyc
+node_modules/
