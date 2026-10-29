@@ -115,5 +115,5 @@ node scripts/patch-theme-colors.mjs && node scripts/patch-portrait-options.mjs
 Re-run both patch scripts after upgrading `dsh-tui`. Code is MIT; the artwork
 belongs to SEGA / Colorful Palette and is not redistributed here.
 
-> Docs in `docs/` are written in English (they quote code and error strings);
-> the README above is the Chinese overview.
+> The docs above are the Chinese originals; they quote the code and error
+> strings verbatim, so code stays as written.

@@ -1,69 +1,56 @@
-# Dead ends (so the next person skips them)
+# 走过的弯路（后来人可以直接跳过）
 
-> 中文摘要：任何「大图降采样到 42×30」都会糊（整幅只有 1260 格，脸要占 200 格）；手绘 42×30 形状干净但不像本人；`Normal` 光标里箭头压在左鬓上，按颜色、按其它状态搬像素、按 bbox 对齐投票三种补法都失败 —— 正确做法是换用 `Person` 状态。另外 `parseRGB()` 只认 `rgb()` 不认 `#hex`，是「主题整体生效但开屏大字还是品牌蓝」的根因。
+要在 32 像素宽的预算里做出"认得出是谁"的角色，我绕了很多圈。下面这些当时看着有希望，
+实际上都不行。
 
-Getting a *recognisable* character out of a 32-pixel-wide budget took a lot of
-wrong turns. These are the ones that looked promising and were not.
+## 把真实画作降采样
 
-## Downscaling real artwork
+所有"先画大的再缩小"的路线都死在同一个地方：42×30 总共只有 1260 格，一张脸大概要吃掉
+200 格。试过并失败的：
 
-Every "draw it bigger, then shrink" route fails the same way: at 42×30 the whole
-character gets 1260 pixels, and a face needs roughly 200 of them. Tried and
-failed:
+- 官方贴纸 PNG（296×256，带透明通道，但日文标语已经烤进图里）→ 降采样后眼睛直接消失；
+- 角色选择立绘（376×840）→ 抠掉装饰没问题，塞进 42×30 就是一团；
+- `gpt-image-2` 的像素画提示词（1024² 下很好看）→ 源图本身是约 70 格的精细像素，
+  压到 42 格就糊掉了；
+- ComfyUI img2img（denoise 0.5 / 0.72 / 0.82）→ 把深色裙子重新配色成了青色、姿势也重画了；
+  同 seed 改提示词同样会换姿势，所以它也不能当"闭眼变体"生成器用。
 
-- official stamp PNG (296×256, transparent, has Japanese text baked in) →
-  downscale loses the eyes entirely;
-- character-select illustration (376×840) → decoration removal is fine, the
-  42×30 grid is not;
-- `gpt-image-2` pixel-art prompts (looked great at 1024²) → the source is ~70
-  pixels of detail, so the 42-pixel version is mush;
-- ComfyUI img2img (denoise 0.5 / 0.72 / 0.82) → recoloured the dress to teal and
-  rebuilt the pose; same seed + edited prompt also changes the pose, so it is
-  not a reliable "blink variant" generator.
+结论：要么找一个**本来就**是 32 像素的源，要么就在那个尺寸上手画。官方光标属于前者。
 
-Conclusion: pick a source that **is** already ~32 px, or draw it by hand at that
-size. The official cursors are the former.
+## 手绘 42×30
 
-## Hand-drawing 42×30
+`draw_bust.py` / `draw_bust2.py` 用椭圆和逐行区间拼半身像。产物干净、也确实是个粉发 chibi，
+但认不出是"瑞希"。它收集到的反馈依次是：「太不像了」，然后是「头部形状」——头是个球，
+没有下颌收窄。逐行 silhouette 能修好形状，修不好相似度。
 
-`draw_bust.py` / `draw_bust2.py` build a bust out of ellipses and row spans.
-It produces something clean and unmistakably *a* pink-haired chibi, but not
-distinguishably *Mizuki*. Complaints it collected: "太不像了" (too unlike), then
-"头部形状" (the head is a ball — no jaw taper). Row-span silhouettes fix the
-shape; they do not fix likeness.
+## 把被箭头挡住的左边缘补回来
 
-## Recovering the occluded left edge
+`Normal` 光标把指针画在左上方头发上。试过：
 
-`Normal` cursors draw the pointer over the upper-left hair. Tried:
+1. 按 UI 调色板（`#FBC5FF`、`#884499`、`#421C70`、`#CD95BE`）抠 → 抗锯齿的边缘像素活下来，
+   看起来就是"这块颜色不对"；
+2. 从 `Person` / `Working` / `Link` 按固定坐标搬像素过来 → 这些状态里**头像整体平移了
+   2–4 px**，接缝永远对不齐；
+3. 跨状态按 bbox 对齐后逐像素多数投票 → bbox 之间的差异比箭头位移还大，投票结果被污染。
 
-1. key by UI palette (`#FBC5FF`, `#884499`, `#421C70`, `#CD95BE`) → anti-aliased
-   edge pixels survive and look like a colour-shifted patch;
-2. move pixels in from `Person` / `Working` / `Link` at fixed coordinates →
-   those states **shift the head 2–4 px**, so the seam never lines up;
-3. per-pixel majority vote across states aligned by bbox → the bboxes disagree
-   by more than the arrow moves, so the vote is polluted.
+真正的解法是不需要"补"：用 `Person`，它的图标根本不碰脸，只把图标压住的几个描边像素
+重画回去就行（见 `PIPELINE.md`）。
 
-The fix was to not need recovery: use `Person`, whose icon never touches the
-face, and repaint the few outline pixels the icon covered (see `PIPELINE.md`).
+## 主题大字的颜色
 
-## Theme wordmark colour
+`parseRGB()` 原本只匹配 `rgb(...)`。所以 hex 写的 accent 会被解析成 `null`，开屏大字悄悄
+退回 DeepSeek 品牌蓝——而其它界面（走 Ink 自己的颜色处理）都是对的。如果以后再遇到
+"主题基本生效但标题还是蓝的"，先查这里。
 
-`parseRGB()` matched `rgb(...)` only. A hex accent therefore parsed to `null`
-and the splash wordmark silently used the DeepSeek brand blue — while the rest
-of the UI (which uses Ink's own colour handling) was correctly themed. If a
-"theme mostly works but the big title is blue" issue shows up again, start here.
+第二层的坑：让 `parseRGB` 认 hex 之后，把 `activity` 当渐变中档会引入**第二种色相**——
+絵名的砂棕 accent 加瑞希粉 activity，渐变就成了脏脏的「棕→粉→奶油」。单色相
+（accent 提亮 32% / 62%）才是安全的公式。
 
-Second-order trap: after making `parseRGB` understand hex, using `activity` as
-the middle stop of the title gradient gives *two* hues — Ena's tan accent plus
-Mizuki's pink activity makes a muddy "brown → pink → cream" ramp. Single-hue
-(accent lightened 32% / 62%) is the safe formula.
+## 零碎几条
 
-## Odds and ends
-
-- `rembg` cannot fetch its ONNX models here (GitHub release connections are
-  dropped). `skytnt/anime-seg` via `hf-mirror.com` works.
-- `animecut.py` must resize the mask **after** cropping to 1024, not before —
-  the wrong order yields a 62×585 bbox.
-- `dsh-tui` on Windows is a delegating launcher at
-  `%APPDATA%\npm\node_modules\@deepseek-harness-tui\dsh-tui\bin\dsh-tui.js` that
-  forwards to the profile copy. Patch the profile copy only.
+- 这台机器上 `rembg` 下不到模型（GitHub release 连接被掐断）。改走 `hf-mirror.com` 的
+  `skytnt/anime-seg` 可以。
+- `animecut.py` 必须在**裁到 1024 之后**再缩放 mask，顺序反了会得到 62×585 的 bbox。
+- Windows 上 `dsh-tui` 是委托壳：
+  `%APPDATA%\npm\node_modules\@deepseek-harness-tui\dsh-tui\bin\dsh-tui.js` 会转发到
+  profile 里的那份。补丁只改 profile 那份。
