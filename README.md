@@ -26,19 +26,30 @@ docs/NOTES.md           走过的弯路（别再踩一遍）
 ## 三分钟上手
 
 ```bash
-# 1. 主题
-node scripts/install-themes.mjs mizuki     # 或 ena；加参数会顺手设成当前主题
+node scripts/setup.mjs mizuki      # 或 ena
+```
 
-# 2. 开屏 / 侧栏像素小人（可选，需要 Python + Pillow）
+一条命令搞定：拷主题 → 打两个补丁 → 如果 `assets/maid-<角色>/` 里已经有图就顺手装上 →
+最后告诉你 `cordis.patch.yml` 还缺哪几行。重启 dsh-tui 就生效。
+
+想只做其中一步也可以单独跑：
+
+```bash
+node scripts/install-themes.mjs mizuki        # 只装主题（会设为当前主题）
+node scripts/patch-theme-colors.mjs           # 让 hex 主题的开屏大字跟着变
+node scripts/patch-portrait-options.mjs       # 设置页加「立绘形象」那一行
+node scripts/install-mascot.mjs mizuki   --normal assets/maid-mizuki/normal.png      # 只装立绘
+```
+
+立绘素材仓库里没有（版权原因），要自己生成：
+
+```bash
 python scripts/fetch-cursors.py Mizuki Ena
 python scripts/cursor_head.py cursors/frames/Mizuki/Person/00.png assets/maid-mizuki/normal.png
 python scripts/cursor_head.py cursors/frames/Ena/Person/00.png    assets/maid-ena/normal.png
-node scripts/install-mascot.mjs mizuki   --normal assets/maid-mizuki/normal.png   --happy  assets/maid-mizuki/normal.png
-
-# 3. 两个补丁：让 hex 主题生效、让设置页出现角色选择
-node scripts/patch-theme-colors.mjs
-node scripts/patch-portrait-options.mjs
 ```
+
+没有立绘也能用主题，`setup.mjs` 会自己跳过那一步。
 
 之后重启 dsh-tui（`terminalImages` 和这些补丁都在启动时读）。
 
@@ -107,11 +118,9 @@ to the settings panel so you can pick which character shows up.
 Quick start:
 
 ```bash
-node scripts/install-themes.mjs mizuki
+node scripts/setup.mjs mizuki        # theme + patches (+ art when present)
 python scripts/fetch-cursors.py Mizuki Ena
 python scripts/cursor_head.py cursors/frames/Mizuki/Person/00.png assets/maid-mizuki/normal.png
-node scripts/install-mascot.mjs mizuki --normal assets/maid-mizuki/normal.png
-node scripts/patch-theme-colors.mjs && node scripts/patch-portrait-options.mjs
 ```
 
 Re-run both patch scripts after upgrading `dsh-tui`. Code is MIT; the artwork
