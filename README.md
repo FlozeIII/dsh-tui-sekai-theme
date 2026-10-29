@@ -1,5 +1,7 @@
 # dsh-tui · Project SEKAI 主题包
 
+> A colour-theme pack + pixel-mascot pipeline for [dsh-tui](https://www.npmjs.com/package/@deepseek-harness-tui/dsh-tui), themed after *Project SEKAI* (Mizuki / Ena). 中文说明见下。
+
 为 [dsh-tui](https://www.npmjs.com/package/@deepseek-harness-tui/dsh-tui) 做的两样东西，
 围绕《世界计划 彩色舞台 feat. 初音未来》里的 **暁山瑞希**（Akiyama Mizuki）和
 **東雲絵名**（Shinonome Ena）：
